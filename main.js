@@ -8,7 +8,7 @@ const puppeteer = require('puppeteer');
   page.once('networkidle0', () => {console.log('Page networkidle0!');});
    page.once('load', () =>{ console.log('Page load!');});
   
-  await page.goto('http://www.aftonbladet.se/', {waitUntil: ['load'] }).then((response) =>{console.log('then ');}).catch((reason) =>{ console.error('FELET ', reason)});
+  await page.goto('http://www.aftonbladet.se/', {waitUntil: ['networkidle2'] }).then((response) =>{console.log('then ');}).catch((reason) =>{ console.error('FELET ', reason)});
     console.log('scrrein');
   await page.screenshot({path: 'aftonabladet.png'}).then(()=>{console.log('scriin');});
 
