@@ -1,4 +1,31 @@
 const puppeteer = require('puppeteer');
+/**Hack för att få separata sessioner. Scriptet började skriva in Ängelholm istället för Stockholm.. osv */
+const Page = require('puppeteer/lib/Page');
+
+async function newPageWithNewContext(browser) {
+  const {
+    browserContextId
+  } = await browser._connection.send('Target.createBrowserContext');
+  const {
+    targetId
+  } = await browser._connection.send('Target.createTarget', {
+    url: 'about:blank',
+    browserContextId
+  });
+  const client = await browser._connection.createSession(targetId);
+  const page = await Page.create(client, browser._ignoreHTTPSErrors, browser._screenshotTaskQueue);
+  page.browserContextId = browserContextId;
+  return page;
+}
+
+async function closePage(browser, page) {
+  if (page.browserContextId != undefined) {
+    await browser._connection.send('Target.disposeBrowserContext', {
+      browserContextId: page.browserContextId
+    });
+  }
+  await page.close();
+}
 
 
 
@@ -26,16 +53,19 @@ function testa() {
 
 (async () => {
   const browser = await puppeteer.launch({
-    headless: false,
-    // ,args: ['--start-fullscreen']
-  }
-  );
+    headless: true,
+    args: ['--start-fullscreen']
+  });
 
-  const page = await browser.newPage();
+  const page = await newPageWithNewContext(browser);
 
   //  console.log('window w '5 + document.defaultView.width);
   // console.log('window h ' + document.defaultView.height);
-  page.setViewport({ width: 1920, height: 1080, hasTouch: false });
+  page.setViewport({
+    width: 1920,
+    height: 1080,
+    hasTouch: false
+  });
 
   //   page.once('networkidle2', () => {console.log('Page networkidle2!');});
   //   page.once('networkidle0', () => {console.log('Page networkidle0!');});
@@ -49,7 +79,13 @@ function testa() {
       console.log(`${i}: ${msg.args[i]}`);
   });
 
-  await page.goto('http://www.uat.flygbra.se', { waitUntil: ['networkidle2'] }).then((response) => { console.log('then '); }).catch((reason) => { console.error('FELET ', reason) });
+  await page.goto('http://www.uat.flygbra.se', {
+    waitUntil: ['networkidle2']
+  }).then((response) => {
+    console.log('then ');
+  }).catch((reason) => {
+    console.error('FELET ', reason)
+  });
   try {
     //Ingen hemresa
     await page.click('#destination > div > div.formArea > div > div:nth-child(3) > label > div > ins');
@@ -59,21 +95,31 @@ function testa() {
     await page.click('#DatePickerDeparture a.ui-datepicker-next'); //klick igen #DatePickerDeparture a.ui-datepicker-next
     await page.click('#DatePickerDeparture a.ui-state-default');
     // Anger Från och Till
-    await page.type('#allOriginRoutes', 'STOCKHOLM/BROMMA', { delay: 10 }); // BROMMA/STOCKHOLM  STOCKHOLM/BROMMA Skriver in värdena. De selectas inte
+    await page.type('#allOriginRoutes', 'STOCKHOLM/BROMMA', {
+      delay: 10
+    }); // BROMMA/STOCKHOLM  STOCKHOLM/BROMMA Skriver in värdena. De selectas inte
     await page.click('#destinationRoutesSection');
-    await page.type('#destinationRoutesSection', 'MALMÖ', { delay: 10 });
+    await page.type('#destinationRoutesSection', 'MALMÖ', {
+      delay: 10
+    });
     // Ange barnpassagerare
     await page.click('#passengers');
     await page.click('#Children-Add');
-    await page.screenshot({ path: 'f7_sida1.png' }).then(() => console.log('sida1'));
+    await page.screenshot({
+      path: 'f7_sida1.png'
+    }).then(() => console.log('sida1'));
     // var nav = page.waitForNavigation({waitUntil: ['networkidle2'] });
     // await page.click('.blue');
     await page.click('#destination > div > div.formArea > div > div.col-sm-6.col-xs-12.colFive.pull-right > button');
     console.log('Sida 1 är klar.. Går till sida 2')
-    await page.waitForNavigation({ waitUntil: "networkidle0" });
+    await page.waitForNavigation({
+      waitUntil: "networkidle0"
+    });
     // await nav;
     console.log('Sida 2 är laddad')
-    await page.screenshot({ path: 'f7_sida2.png' }).then(() => console.log('sida2'));
+    await page.screenshot({
+      path: 'f7_sida2.png'
+    }).then(() => console.log('sida2'));
     // Väljer en resa
     // Promise<Element> availableDiv = await page.evaluate(()=> {
     const availableDiv = await page.evaluate(() => {
@@ -84,11 +130,21 @@ function testa() {
       }
       throw "Kunde inte välja en resa";
     })
-    await page.screenshot({ path: 'f7_sida3.png' }).then(() => console.log('sida3'));
+    // #tpl3_widget - input - travellerList - traveller_0_ADT - IDEN_TitleCode
+    console.log('Ska klicka... ');
     await page.click('button.tripSummary-btn-continue');
-    console.log('knapptryckt');
+    await page.screenshot({
+      path: 'f7_sida3.png'
+    }).then(() => console.log('sida3'));
+
+    console.log('knapptryckt och screen.');
+    await page.waitForNavigation({
+      waitUntil: "networkidle0"
+    });
+    console.log('Väntar på selector');
     // await page.waitForNavigation({ waitUntil: "networkidle0" });
-    console.log('Väntar på resenär...');
+    await page.waitForSelector('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode');
+    console.log('Väntar på selector istället för nav...');
     await page.select('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode', 'MR');
     await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_FirstName', adtfirst);
     await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_LastName', adtlast);
@@ -101,7 +157,9 @@ function testa() {
     await page.type('#tpl3_widget-input-travellerList-contactInformation-Email', mail);
     await page.type('#tpl3_widget-input-travellerList-contactInformation-EmailConfirm', mail);
     await page.type('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile', mobilen).then(() => console.debug('Vi komm hit'));
-    await page.screenshot({ path: 'resenarsinfo.png' }).then(() => console.log('Resenärsinfo'));
+    await page.screenshot({
+      path: 'resenarsinfo.png'
+    }).then(() => console.log('Resenärsinfo'));
     //.click('button.tripSummary-btn-continue') //#w31 funkar??
     /**
      * .wait('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode')
@@ -127,5 +185,6 @@ function testa() {
   }
 
   //   await page.waitForNavigation();
+  await closePage(browser, page);
   await browser.close();
 })();
