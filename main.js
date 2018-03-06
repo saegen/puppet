@@ -27,15 +27,18 @@ function testa() {
 (async () => {
   const browser = await puppeteer.launch({
     headless: false,
-    // ,args: ['--start-fullscreen']
-  }
-  );
+    args: ['--start-fullscreen', '--aggressive-cache-discard', '--disk-cache-dir="C:\Gitrepos\puppet\chromiumCache"', '--disk-cache-size=1']
+  });
 
   const page = await browser.newPage();
 
   //  console.log('window w '5 + document.defaultView.width);
   // console.log('window h ' + document.defaultView.height);
-  page.setViewport({ width: 1920, height: 1080, hasTouch: false });
+  page.setViewport({
+    width: 1920,
+    height: 1080,
+    hasTouch: false
+  });
 
   //   page.once('networkidle2', () => {console.log('Page networkidle2!');});
   //   page.once('networkidle0', () => {console.log('Page networkidle0!');});
@@ -49,7 +52,13 @@ function testa() {
       console.log(`${i}: ${msg.args[i]}`);
   });
 
-  await page.goto('http://www.uat.flygbra.se', { waitUntil: ['networkidle2'] }).then((response) => { console.log('then '); }).catch((reason) => { console.error('FELET ', reason) });
+  await page.goto('http://www.uat.flygbra.se', {
+    waitUntil: ['networkidle2']
+  }).then((response) => {
+    console.log('then ');
+  }).catch((reason) => {
+    console.error('FELET ', reason)
+  });
   try {
     //Ingen hemresa
     await page.click('#destination > div > div.formArea > div > div:nth-child(3) > label > div > ins');
@@ -59,36 +68,57 @@ function testa() {
     await page.click('#DatePickerDeparture a.ui-datepicker-next'); //klick igen #DatePickerDeparture a.ui-datepicker-next
     await page.click('#DatePickerDeparture a.ui-state-default');
     // Anger Från och Till
-    await page.type('#allOriginRoutes', 'STOCKHOLM/BROMMA', { delay: 10 }); // BROMMA/STOCKHOLM  STOCKHOLM/BROMMA Skriver in värdena. De selectas inte
+    await page.click('#allOriginRoutes');
+    await page.type('#allOriginRoutes', 'STOCKHOLM/BROMMA', {
+      delay: 20
+    }); // BROMMA/STOCKHOLM  STOCKHOLM/BROMMA Skriver in värdena. De selectas inte
     await page.click('#destinationRoutesSection');
-    await page.type('#destinationRoutesSection', 'MALMÖ', { delay: 10 });
+    await page.type('#destinationRoutesSection', 'MALMÖ', {
+      delay: 20
+    });
     // Ange barnpassagerare
     await page.click('#passengers');
     await page.click('#Children-Add');
-    await page.screenshot({ path: 'f7_sida1.png' }).then(() => console.log('sida1'));
+    await page.screenshot({
+      path: 'f7_sida1.png'
+    }).then(() => console.log('sida1'));
     // var nav = page.waitForNavigation({waitUntil: ['networkidle2'] });
     // await page.click('.blue');
+    await page.waitFor(4000);
     await page.click('#destination > div > div.formArea > div > div.col-sm-6.col-xs-12.colFive.pull-right > button');
     console.log('Sida 1 är klar.. Går till sida 2')
-    await page.waitForNavigation({ waitUntil: "networkidle0" });
+    await page.waitForNavigation({
+      waitUntil: "networkidle0"
+    });
     // await nav;
-    console.log('Sida 2 är laddad')
-    await page.screenshot({ path: 'f7_sida2.png' }).then(() => console.log('sida2'));
+    console.log('Sida 2 är laddad');
+    await page.screenshot({
+      path: 'f7_sida2.png'
+    }).then(() => console.log('sida2'));
     // Väljer en resa
     // Promise<Element> availableDiv = await page.evaluate(()=> {
     const availableDiv = await page.evaluate(() => {
       const availableTrip = document.querySelector('div.bound-table-cell-reco-available');
       if (availableTrip) {
         availableTrip.click();
+
         return availableTrip;
       }
       throw "Kunde inte välja en resa";
-    })
-    await page.screenshot({ path: 'f7_sida3.png' }).then(() => console.log('sida3'));
+    }).then(await page.waitFor(2000))
+    console.log('evaluate är körd. T');
+    await page.screenshot({
+      path: 'f7_sida3.png'
+    }).then(() => console.log('Screenshot: f7_sida3'));
     await page.click('button.tripSummary-btn-continue');
     console.log('knapptryckt');
-    // await page.waitForNavigation({ waitUntil: "networkidle0" });
+    // await page.waitForNavigation({
+    //   waitUntil: "networkidle0"
+    // });
+    await page.waitFor(2000);
     console.log('Väntar på resenär...');
+    await page.waitForSelector('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode');
+    console.log('Hittade resenär MR!');
     await page.select('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode', 'MR');
     await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_FirstName', adtfirst);
     await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_LastName', adtlast);
@@ -101,7 +131,9 @@ function testa() {
     await page.type('#tpl3_widget-input-travellerList-contactInformation-Email', mail);
     await page.type('#tpl3_widget-input-travellerList-contactInformation-EmailConfirm', mail);
     await page.type('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile', mobilen).then(() => console.debug('Vi komm hit'));
-    await page.screenshot({ path: 'resenarsinfo.png' }).then(() => console.log('Resenärsinfo'));
+    await page.screenshot({
+      path: 'resenarsinfo.png'
+    }).then(() => console.log('Resenärsinfo'));
     //.click('button.tripSummary-btn-continue') //#w31 funkar??
     /**
      * .wait('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode')
