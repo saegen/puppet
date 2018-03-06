@@ -76,22 +76,22 @@ function testa() {
     await page.click('#Children-Add');
     await page.screenshot({
       path: 'f7_sida1.png'
-    }).then(() => console.log('sida1'));
-    // var nav = page.waitForNavigation({waitUntil: ['networkidle2'] });
-    // await page.click('.blue');
-    await page.waitFor(4000);
+    }).then(() => console.log('screenshot sida1'));
+
+    // Gå till sida 2
     await page.click('#destination > div > div.formArea > div > div.col-sm-6.col-xs-12.colFive.pull-right > button');
-    console.log('Sida 1 är klar.. Går till sida 2')
-    await page.waitForNavigation({
-      waitUntil: "networkidle0"
-    });
+    await page.waitFor(2000);
+    console.log('Går till sida 2...')
+    await page.waitForNavigation({ waitUntil: "networkidle2" });
     // await nav;
     console.log('Sida 2 är laddad');
-    await page.screenshot({
-      path: 'f7_sida2.png'
-    }).then(() => console.log('sida2'));
+    await page.screenshot({ path: 'f7_sida2.png' }).then(() => console.log('screenshot sida2'));
     // Väljer en resa
-    // Promise<Element> availableDiv = await page.evaluate(()=> {
+    await page.waitForSelector('div.bound-table-cell-reco-available').catch((err) => {
+        console.error('Timeout?');
+        console.error(err);
+      }
+    );
     const availableDiv = await page.evaluate(() => {
       const availableTrip = document.querySelector('div.bound-table-cell-reco-available');
       if (availableTrip) {
@@ -115,65 +115,32 @@ function testa() {
     console.log('Hittade resenär: Man MR!');
     await page.select('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode', 'MR');
 
-    await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_FirstName', adtfirst, {
-      delay: 20
-    });
+    await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_FirstName', adtfirst, { delay: 20 });
     console.log('Vuxen förnamn');
-    await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_LastName', adtlast, {
-      delay: 20
-    });
+    await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_LastName', adtlast, { delay: 20 });
     console.log('Vuxen efternamn');
     await page.select('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_TitleCode', 'MS');
     console.log('Flicka MS');
-    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_FirstName', chdfirst, {
-      delay: 20
-    });
+    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_FirstName', chdfirst, { delay: 20 });
     console.log('Barn förnamn');
-    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_LastName', chdlast, {
-      delay: 20
-    });
+    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_LastName', chdlast, { delay: 20 });
     console.log('Barn efternamn');
-    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateDay', dd, {
-      delay: 20
-    })
+    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateDay', dd, { delay: 20 });
     console.log('Barn dag');
     await page.select('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateMonth', mm)
     console.log('Barn månad');
-    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateYear', yyyy, {
-      delay: 20
-    })
+    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateYear', yyyy, { delay: 20 });
     console.log('Barn år');
-    await page.type('#tpl3_widget-input-travellerList-contactInformation-Email', mail, {
-      delay: 20
-    });
+    await page.type('#tpl3_widget-input-travellerList-contactInformation-Email', mail, { delay: 20 });
     console.log('Mail 1');
-    await page.type('#tpl3_widget-input-travellerList-contactInformation-EmailConfirm', mail), {
-      delay: 20
-    };
+    await page.type('#tpl3_widget-input-travellerList-contactInformation-EmailConfirm', mail, { delay: 20 });
     console.log('Mail 2');
     await page.type('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile', mobilen).then(() => console.debug('Mobil, Resenär ifylld!'));
     await page.screenshot({
       path: 'resenarsinfo.png'
     }).then(() => console.log('Resenärsinfo klar se resenarsinfo.png'));
-    //.click('button.tripSummary-btn-continue') //#w31 funkar??
-    /**
-     * .wait('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode')
-  .select('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode','MR')
-  .wait('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_FirstName').insert('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_FirstName',adtfirst)
-  .wait('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_LastName').insert('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_LastName',adtlast)
-  .select('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_TitleCode','MS')
-  .wait('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_FirstName').insert('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_FirstName',chdfirst)
-  .wait('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_LastName').insert('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_LastName',chdlast)
-  .wait('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateDay').insert('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateDay',dd)
-  .select('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateMonth',mm)
-  .wait('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateYear').insert('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateYear',yyyy)
-  .wait('#tpl3_widget-input-travellerList-contactInformation-Email').insert('#tpl3_widget-input-travellerList-contactInformation-Email',mail)
-  .wait('#tpl3_widget-input-travellerList-contactInformation-EmailConfirm').insert('#tpl3_widget-input-travellerList-contactInformation-EmailConfirm',mail)
-  .wait('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile').insert('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile',mobilen)
-  .screenshot('./screenshots/resenarsinfo.png')
-  .wait(3000)
-  .click('button.tripSummary-btn-continue') //#w31 funkar??
-     */
+    await page.click('button.tripSummary-btn-continue') //#w31 funkar??
+    await page.waitFor(20000)
 
   } catch (error) {
     await page.screenshot('ERROR.png');
