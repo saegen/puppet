@@ -1,12 +1,12 @@
 const puppeteer = require('puppeteer');
-
-
-
+//datum fix för barn
 var today = new Date();
 today.setFullYear(today.getFullYear() - 5);
-var dd = today.getDate();
-var mm = today.getMonth() + 1; //January is 0!
-var yyyy = today.getFullYear();
+var dd = today.getDate().toString();
+// dds: string = today.getDate().toString();
+// mms: string = today.getMonth().toString();
+var mm = (today.getMonth() + 1).toString(); //January is 0!
+var yyyy = today.getFullYear().toString();
 
 var adtfirst = 'Östen';
 var adtlast = 'Åkesson';
@@ -19,7 +19,6 @@ var mobilen = '737111777';
 //ALLA
 var bokref = 'bokref saknas';
 //Sida Alles ok till payment
-
 function testa() {
   console.log(today.toISOString().substr(0, 10))
 }
@@ -32,16 +31,12 @@ function testa() {
 
   const page = await browser.newPage();
 
-  //  console.log('window w '5 + document.defaultView.width);
-  // console.log('window h ' + document.defaultView.height);
   page.setViewport({
     width: 1920,
     height: 1080,
     hasTouch: false
   });
 
-  //   page.once('networkidle2', () => {console.log('Page networkidle2!');});
-  //   page.once('networkidle0', () => {console.log('Page networkidle0!');});
   page.once('load', () => {
     testa();
     console.log('Page load!');
@@ -55,7 +50,7 @@ function testa() {
   await page.goto('http://www.uat.flygbra.se', {
     waitUntil: ['networkidle2']
   }).then((response) => {
-    console.log('then ');
+    console.log('goto klar..')
   }).catch((reason) => {
     console.error('FELET ', reason)
   });
@@ -101,12 +96,11 @@ function testa() {
       const availableTrip = document.querySelector('div.bound-table-cell-reco-available');
       if (availableTrip) {
         availableTrip.click();
-
         return availableTrip;
       }
       throw "Kunde inte välja en resa";
     }).then(await page.waitFor(2000))
-    console.log('evaluate är körd. T');
+    console.log('evaluate är körd.');
     await page.screenshot({
       path: 'f7_sida3.png'
     }).then(() => console.log('Screenshot: f7_sida3'));
@@ -118,22 +112,49 @@ function testa() {
     await page.waitFor(2000);
     console.log('Väntar på resenär...');
     await page.waitForSelector('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode');
-    console.log('Hittade resenär MR!');
+    console.log('Hittade resenär: Man MR!');
     await page.select('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode', 'MR');
-    await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_FirstName', adtfirst);
-    await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_LastName', adtlast);
+
+    await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_FirstName', adtfirst, {
+      delay: 20
+    });
+    console.log('Vuxen förnamn');
+    await page.type('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_LastName', adtlast, {
+      delay: 20
+    });
+    console.log('Vuxen efternamn');
     await page.select('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_TitleCode', 'MS');
-    await page.insert('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_FirstName', chdfirst);
-    await page.insert('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_LastName', chdlast);
-    await page.insert('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateDay', dd)
+    console.log('Flicka MS');
+    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_FirstName', chdfirst, {
+      delay: 20
+    });
+    console.log('Barn förnamn');
+    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_LastName', chdlast, {
+      delay: 20
+    });
+    console.log('Barn efternamn');
+    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateDay', dd, {
+      delay: 20
+    })
+    console.log('Barn dag');
     await page.select('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateMonth', mm)
-    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateYear', yyyy)
-    await page.type('#tpl3_widget-input-travellerList-contactInformation-Email', mail);
-    await page.type('#tpl3_widget-input-travellerList-contactInformation-EmailConfirm', mail);
-    await page.type('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile', mobilen).then(() => console.debug('Vi komm hit'));
+    console.log('Barn månad');
+    await page.type('#tpl3_widget-input-travellerList-traveller_1_CHD-IDEN_DateOfBirth-DateYear', yyyy, {
+      delay: 20
+    })
+    console.log('Barn år');
+    await page.type('#tpl3_widget-input-travellerList-contactInformation-Email', mail, {
+      delay: 20
+    });
+    console.log('Mail 1');
+    await page.type('#tpl3_widget-input-travellerList-contactInformation-EmailConfirm', mail), {
+      delay: 20
+    };
+    console.log('Mail 2');
+    await page.type('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile', mobilen).then(() => console.debug('Mobil, Resenär ifylld!'));
     await page.screenshot({
       path: 'resenarsinfo.png'
-    }).then(() => console.log('Resenärsinfo'));
+    }).then(() => console.log('Resenärsinfo klar se resenarsinfo.png'));
     //.click('button.tripSummary-btn-continue') //#w31 funkar??
     /**
      * .wait('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode')
@@ -155,6 +176,7 @@ function testa() {
      */
 
   } catch (error) {
+    await page.screenshot('ERROR.png');
     console.error('Fel ', error);
   }
 
