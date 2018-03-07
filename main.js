@@ -23,6 +23,17 @@ function testa() {
   console.log(today.toISOString().substr(0, 10))
 }
 
+function pickRandomDay(sel){
+  const days = document.querySelectorAll(sel);
+  let elem = null;
+  if (days.length > 0) {
+      elem = days[parseInt(days.length/2)];
+      elem.click();
+      return true;
+  }
+   throw new Error('Kunde inte hitta något avresedatum!')
+}
+
 (async () => {
   const browser = await puppeteer.launch({
     headless: false,
@@ -59,9 +70,9 @@ function testa() {
     await page.click('#destination > div > div.formArea > div > div:nth-child(3) > label > div > ins');
     // Fixa utresedatum 2 månader senare
     await page.click('#travelFrom');
-    await page.click('#DatePickerDeparture a.ui-datepicker-next'); //#dp1519646632844 > div > div > a.ui-datepicker-next.ui-corner-all
-    await page.click('#DatePickerDeparture a.ui-datepicker-next'); //klick igen #DatePickerDeparture a.ui-datepicker-next
-    await page.click('#DatePickerDeparture a.ui-state-default');
+    await page.click('#DatePickerDeparture a.ui-datepicker-next').then(await page.click('#DatePickerDeparture a.ui-datepicker-next'));
+    //tar en dag mitt i månaden för att försöka undvika att det kommer saknas resor den dagen.
+    await page.evaluate(pickRandomDay,'#DatePickerDeparture  a.ui-state-default');
     // Anger Från och Till
     await page.click('#allOriginRoutes');
     await page.type('#allOriginRoutes', 'STOCKHOLM/BROMMA', {
@@ -74,9 +85,7 @@ function testa() {
     // Ange barnpassagerare
     await page.click('#passengers');
     await page.click('#Children-Add');
-    await page.screenshot({
-      path: 'f7_sida1.png'
-    }).then(() => console.log('screenshot sida1'));
+    await page.screenshot({ path: 'f7_sida1.png' }).then(() => console.log('screenshot sida1'));
 
     // Gå till sida 2
     await page.click('#destination > div > div.formArea > div > div.col-sm-6.col-xs-12.colFive.pull-right > button');
@@ -88,17 +97,23 @@ function testa() {
     await page.screenshot({ path: 'f7_sida2.png' }).then(() => console.log('screenshot sida2'));
     // Väljer en resa
     await page.waitForSelector('div.bound-table-cell-reco-available').catch((err) => {
-        console.error('Timeout?');
-        console.error(err);
+      throw new Error("Kunde hitta tillgängliga resor detta datum, försök ett annat datum")
+     //Fel sidan: #global-error-message //#dp1520350372387 > div > table > tbody > tr:nth-child(2) > td:nth-child(5) > a
+      // klicka "Ändra sökning" : modifySearch > a:nth-child(1), älle div.modifySearch > a
+      // byt månad
+      // klick fortsätt igen
+
       }
     );
+
+
     const availableDiv = await page.evaluate(() => {
       const availableTrip = document.querySelector('div.bound-table-cell-reco-available');
       if (availableTrip) {
         availableTrip.click();
         return availableTrip;
       }
-      throw "Kunde inte välja en resa";
+      throw new Error("Kunde inte välja en resa");
     }).then(await page.waitFor(2000))
     console.log('evaluate är körd.');
     await page.screenshot({
@@ -135,13 +150,15 @@ function testa() {
     console.log('Mail 1');
     await page.type('#tpl3_widget-input-travellerList-contactInformation-EmailConfirm', mail, { delay: 20 });
     console.log('Mail 2');
-    await page.type('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile', mobilen).then(() => console.debug('Mobil, Resenär ifylld!'));
-    await page.screenshot({
-      path: 'resenarsinfo.png'
-    }).then(() => console.log('Resenärsinfo klar se resenarsinfo.png'));
-    await page.click('button.tripSummary-btn-continue') //#w31 funkar??
-    await page.waitFor(20000)
+    await page.type('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile', mobilen).then(() => console.debug('Mobilen. Resenär ifylld!'));
 
+    await page.screenshot({ path: 'resenarsinfo.png' }).then(() => console.log('Resenärsinfo klar se resenarsinfo.png'));
+
+    await page.click('button.tripSummary-btn-continue');
+    await page.waitFor(10000)
+    await page.waitForSelector('button.tripSummary-btn-continue');
+    await page.click('button.tripSummary-btn-continue');
+    await page.waitFor(8000);
   } catch (error) {
     await page.screenshot('ERROR.png');
     console.error('Fel ', error);
@@ -150,3 +167,8 @@ function testa() {
   //   await page.waitForNavigation();
   await browser.close();
 })();
+
+/**
+ * #global-warning-message - selector när man inte hittar resa.
+ *
+ */
