@@ -1,3 +1,4 @@
+var fs = require('fs');
 const puppeteer = require('puppeteer');
 //datum fix för barn
 var today = new Date();
@@ -8,14 +9,14 @@ var dd = today.getDate().toString();
 var mm = (today.getMonth() + 1).toString(); //January is 0!
 var yyyy = today.getFullYear().toString();
 
-var adtfirst = 'Östen';
-var adtlast = 'Åkesson';
-var chdfirst = 'Söggla';
-var chdlast = 'Själmare';
-var mail = 'saegen@hotmail.com';
+var adtfirst = 'Åsten';
+var adtlast = 'Äkesson';
+var chdfirst = 'Åsöggla';
+var chdlast = 'Hjälmare';
+var mail = 'tomas.hesse@consid.se';
 //kort 4541090000010073
 var nameOnCard = adtfirst + ' ' + adtlast;
-var mobilen = '737111777';
+var mobilen = '733835979';
 //ALLA
 var bokref = 'bokref saknas';
 //Sida Alles ok till payment
@@ -75,13 +76,9 @@ function pickRandomDay(sel){
     await page.evaluate(pickRandomDay,'#DatePickerDeparture  a.ui-state-default');
     // Anger Från och Till
     await page.click('#allOriginRoutes');
-    await page.type('#allOriginRoutes', 'STOCKHOLM/BROMMA', {
-      delay: 20
-    }); // BROMMA/STOCKHOLM  STOCKHOLM/BROMMA Skriver in värdena. De selectas inte
+    await page.type('#allOriginRoutes', 'STOCKHOLM/BROMMA', { delay: 20 }); // BROMMA/STOCKHOLM  STOCKHOLM/BROMMA Skriver in värdena. De selectas inte
     await page.click('#destinationRoutesSection');
-    await page.type('#destinationRoutesSection', 'MALMÖ', {
-      delay: 20
-    });
+    await page.type('#destinationRoutesSection', 'MALMÖ', { delay: 20 });
     // Ange barnpassagerare
     await page.click('#passengers');
     await page.click('#Children-Add');
@@ -96,16 +93,14 @@ function pickRandomDay(sel){
     console.log('Sida 2 är laddad');
     await page.screenshot({ path: 'f7_sida2.png' }).then(() => console.log('screenshot sida2'));
     // Väljer en resa
-    await page.waitForSelector('div.bound-table-cell-reco-available').catch((err) => {
-      throw new Error("Kunde hitta tillgängliga resor detta datum, försök ett annat datum")
-     //Fel sidan: #global-error-message //#dp1520350372387 > div > table > tbody > tr:nth-child(2) > td:nth-child(5) > a
-      // klicka "Ändra sökning" : modifySearch > a:nth-child(1), älle div.modifySearch > a
+    //Alternativ till att kasta fel. leta efter  #global-error-message //#dp1520350372387 > div > table > tbody > tr:nth-child(2) > td:nth-child(5) > a
+      // leta efter och klicka "Ändra sökning" : modifySearch > a:nth-child(1), älle div.modifySearch > a
       // byt månad
-      // klick fortsätt igen
-
+      // klick fortsätt igen och börja om
+    await page.waitForSelector('div.bound-table-cell-reco-available').catch((err) => {
+      throw new Error("Kunde hitta tillgängliga resor detta datum, försök ett annat datum.")
       }
     );
-
 
     const availableDiv = await page.evaluate(() => {
       const availableTrip = document.querySelector('div.bound-table-cell-reco-available');
@@ -152,13 +147,70 @@ function pickRandomDay(sel){
     console.log('Mail 2');
     await page.type('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile', mobilen).then(() => console.debug('Mobilen. Resenär ifylld!'));
 
-    await page.screenshot({ path: 'resenarsinfo.png' }).then(() => console.log('Resenärsinfo klar se resenarsinfo.png'));
-
+    await page.screenshot({ path: 'resenarsinfo.png' }).then(() => console.log('Resenärsinfo klar. Går till sida 4..'));
     await page.click('button.tripSummary-btn-continue');
     await page.waitFor(10000)
     await page.waitForSelector('button.tripSummary-btn-continue');
+
+    console.log('Sida 4 laddad. Går till sida 5 Betalning...')
+    await page.screenshot({ path: 'f7_sida4.png' }).then(() => console.log('Screenshot: f7_sida4'));
     await page.click('button.tripSummary-btn-continue');
-    await page.waitFor(8000);
+    await page.waitForSelector('#tpl4_radio_CC');
+
+    console.log('Sida 5 Betalning laddad')
+    await page.click('#tpl4_radio_CC');
+    await page.click('#tpl4_fopTemplate_widget-input-purchaseForm-paymentForm-ccTypesIcons > div:nth-child(4) > label'); // #tpl4_fopTemplate_widget-input-purchaseForm-paymentForm-VI-cardNumber
+    await page.waitForSelector('#tpl4_fopTemplate_widget-input-purchaseForm-paymentForm-VI-cardNumber');
+    await page.type('#tpl4_fopTemplate_widget-input-purchaseForm-paymentForm-VI-cardNumber','4541090000010073');
+    await page.type('#tpl4_fopTemplate_widget-input-purchaseForm-paymentForm-VI-securityCode','123')
+    await page.select('#tpl4_fopTemplate_widget-input-purchaseForm-paymentForm-VI-ccMonth','7')
+    await page.select('#tpl4_fopTemplate_widget-input-purchaseForm-paymentForm-VI-ccYear','23')
+    await page.type('#tpl4_fopTemplate_widget-input-purchaseForm-paymentForm-VI-nameOnCard','Kortinnehavarens namn')
+    await page.click('#widget-group-purchaseForm-termsConditionsForm-termsAndCondition > div > label')
+    await page.screenshot({ path: 'betalning.png' }).then(() => console.log('Betalning klar. Går till sida konfirmation..'));
+    await page.click('button.tripSummary-btn-continue')
+    // .wait('#tpl4_radio_CC').click('#tpl4_radio_CC')
+    await page.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000}).catch((err)=> { throw new Error('waitForNavigation fixck timeout')});
+    console.log('Förbi waitForNavigation! ');
+    await page.screenshot({ path: '3dsecure.png' }).then(() => console.log('Screenshot: 3dsecure.png'));
+    page.on('frameattached',(a)=>{
+      console.log('iframe Attached eventhandler!');
+      a.title().then((title) => {console.log('Frame title: ' + title)})
+      a.name().then((res) => { console.log('Name: ',res);});
+      a.name().then((res) => { console.log('Url: ' ,res);});
+      a.waitForSelector('#userInput1_password').catch((err) => {console.error('Kunde inte hitta userInput1_password')} );
+
+  })
+  // page.on('framedetached',(a)=>{
+  //   console.log('iframe Detached!! ',a.name());
+  // })
+  //await page.waitFor(80000);
+    const frames = page.frames();
+    console.log('Före selectwait. frames count1: ' + frames.length);
+
+    await page.waitForSelector('iframe[src*=DisplayViewVBV]').catch((err)=>{throw new Error('Kunde inte hitta frame :( ')});
+    console.log('selectWait klar');
+    const frames2 = page.frames();
+    console.log('frames count:2 ' + frames2.length);
+    for (let index = 0; index < frames2.length; index++) {
+      const element = frames2[index];
+      console.log("Url o content frame");
+      console.log(element.url());
+      console.log('Num Frame kids' + element.childFrames().length);
+      console.log("CONTENT");
+      element.content().then((val) => fs.writeFileSync('./content' + index + '.html',val )).catch((err) => {throw new Error('kunde inte spara filen content' + index + '.html')})
+      console.log('content' + index + '.html är OK' );
+
+      // console.log("Url o content frame slut");
+    };
+    //const runnerFrame = frames2.find(frame => frame.url().includes('DisplayViewVBV'));
+
+    // console.log(runnerFrame.url()); // runnerFrame is in page.frames()
+    await page.waitFor(80000);
+
+    await dumpFrameTree(page, page.mainFrame(), '');
+
+
   } catch (error) {
     await page.screenshot('ERROR.png');
     console.error('Fel ', error);
@@ -168,7 +220,41 @@ function pickRandomDay(sel){
   await browser.close();
 })();
 
-/**
- * #global-warning-message - selector när man inte hittar resa.
- *
- */
+async function dumpFrameTree(frame, indent) {
+  console.log(indent + frame.url());
+  // let content = await frame.content();
+  console.log(content);
+  const result = await frame.evaluate(() => {
+      let retVal = '';
+      if (document.doctype) {
+          retVal = new XMLSerializer().serializeToString(document.doctype);
+      }
+      if (document.documentElement) {
+          retVal += document.documentElement.outerHTML;
+      }
+      return retVal;
+  });
+  console.log(indent + "  " + result.slice(0, 20));
+  for (let child of frame.childFrames()) {
+      await dumpFrameTree(child, indent + '  ');
+  }
+}
+
+
+async function dumpFrameTree(page, frame, indent) {
+  console.log(indent + frame.url());
+  const result = await frame.evaluate(() => {
+      let retVal = '';
+      if (document.doctype) {
+          retVal = new XMLSerializer().serializeToString(document.doctype);
+      }
+      if (document.documentElement) {
+          retVal += document.documentElement.outerHTML;
+      }
+      return retVal;
+  });
+  console.log(indent + "  " + result.slice(0, 20));
+  for (let child of frame.childFrames()) {
+      await dumpFrameTree(page, child, indent + '  ');
+  }
+}
