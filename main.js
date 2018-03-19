@@ -36,6 +36,17 @@ function pickRandomDay(sel){
    throw new Error('Kunde inte hitta något avresedatum!')
 }
 
+function setBookingRef(sel){
+  const ref = document.querySelector(sel).innerHTML;
+  if (ref) {
+      bokref = ref;
+      console.log("Satte bokningsreferensen till: " + ref)
+      return ref;
+  }
+   throw new Error('Kunde inte hitta någon avbokningsreferens!')
+}
+
+
 (async () => {
   const browser = await puppeteer.launch({
     headless: false,
@@ -60,26 +71,38 @@ function pickRandomDay(sel){
       console.log(`${i}: ${msg.args[i]}`);
   });
 
-  await page.goto('http://www.uat.flygbra.se', {
-    waitUntil: ['networkidle0']
-  }).then((response) => {
-    console.log('goto klar..')
-    page.waitFor(2000);
-  }).catch((reason) => {
-    console.error('FELET ', reason)
+  await page.goto('http://www.uat.flygbra.se', { waitUntil: ['networkidle0'] }).then((response) => {
+    console.log('goto klar.');
+    }).catch((reason) => {
+    console.error('Kunde inte navigera till http://www.uat.flygbra.se. ', reason)
   });
   try {
     //Ingen hemresa
-    await page.waitFor(6000);
-    await page.waitForSelector('#destination > div > div.formArea > div > div:nth-child(3) > label > div > ins');
-    await page.click('#destination > div > div.formArea > div > div:nth-child(3) > label > div > ins');
+    await page.waitFor(2000);
+    console.log('Väntat på första sidan. Väntar Enkelresa... ');
+    await page.waitForSelector('#RoundTrip').then((handle)=>{
+      handle.click();
+      console.log('Enkelresa vald');
+    }).catch((err) => {throw new Error('Kunde inte välja enkelresa')});
+
+    // await page.waitForSelector('#destination > div > div.formArea > div > div:nth-child(3) > label > div > ins');
+    // console.log('Väntat på roundtripiin ..');
+    // await page.click('#destination > div > div.formArea > div > div:nth-child(3) > label > div > ins');
+    console.log('Klickat på destination. Väntar på avresedatum.. ');
     // Fixa utresedatum 2 månader senare
-    await page.waitForSelector('#travelFrom').then(page.click('#travelFrom'));
-    await page.click('#DatePickerDeparture a.ui-datepicker-next').then(await page.click('#DatePickerDeparture a.ui-datepicker-next'));
+    await page.waitForSelector('#travelFrom').then(
+     (res) => {
+      // console.log('Klickar avreseort..')
+     res.click();
+     console.log('Avreseort klickad');
+      //await page.click('#travelFrom')
+      }).catch((err) => {throw new Error('Kunde inte hitta avresedatum!')});
+    await page.click('#DatePickerDeparture a.ui-datepicker-next').then(await page.click('#DatePickerDeparture a.ui-datepicker-next'));// .catch((err) => {throw new Error('Kunde inte klicka nästa månad! ' + err.msg)}));
     //tar en dag mitt i månaden för att försöka undvika att det kommer saknas resor den dagen.
+    console.log('Klickat avresedatum månad 2 grr. Väljer ett random datum ');
     await page.evaluate(pickRandomDay,'#DatePickerDeparture  a.ui-state-default');
     // Anger Från och Till
-    await page.click('#allOriginRoutes');
+    await page.click('#allOriginRoutes').catch((err) => {throw new Error('Kunde inte klicka avreseort!')});
     await page.type('#allOriginRoutes', 'STOCKHOLM/BROMMA', { delay: 20 }); // BROMMA/STOCKHOLM  STOCKHOLM/BROMMA Skriver in värdena. De selectas inte
     await page.click('#destinationRoutesSection');
     await page.type('#destinationRoutesSection', 'MALMÖ', { delay: 20 });
@@ -92,9 +115,9 @@ function pickRandomDay(sel){
     await page.click('#destination > div > div.formArea > div > div.col-sm-6.col-xs-12.colFive.pull-right > button');
     await page.waitFor(2000);
     console.log('Går till sida 2...')
-    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 12000 });
+    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 12000 }).then((res) => {console.log('Sida 2 är laddad')}).catch((err) => { throw new Error("Kunde navigera till sida 2." + err.message) });
     // await nav;
-    console.log('Sida 2 är laddad');
+    // console.log('Sida 2 är laddad');
     await page.screenshot({ path: 'f7_sida2.png' }).then(() => console.log('screenshot sida2'));
     // Väljer en resa
     //Alternativ till att kasta fel. leta efter  #global-error-message //#dp1520350372387 > div > table > tbody > tr:nth-child(2) > td:nth-child(5) > a
@@ -112,17 +135,13 @@ function pickRandomDay(sel){
         availableTrip.click();
         return availableTrip;
       }
-      throw new Error("Kunde inte välja en resa");
+      throw new Error("Kunde inte välja/hitta en resa");
     }).then(await page.waitFor(2000))
     console.log('evaluate är körd.');
-    await page.screenshot({
-      path: 'f7_sida3.png'
-    }).then(() => console.log('Screenshot: f7_sida3'));
+    await page.screenshot({ path: 'f7_sida3.png' }).then(() => console.log('Screenshot: f7_sida3'));
     await page.click('button.tripSummary-btn-continue');
     console.log('knapptryckt');
-    // await page.waitForNavigation({
-    //   waitUntil: "networkidle0"
-    // });
+
     await page.waitFor(2000);
     console.log('Väntar på resenär...');
     await page.waitForSelector('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode');
@@ -184,8 +203,7 @@ function pickRandomDay(sel){
 
   // })
     await page.click('button.tripSummary-btn-continue')
-    // .wait('#tpl4_radio_CC').click('#tpl4_radio_CC')
-    await page.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000}).catch((err)=> { throw new Error('waitForNavigation fixck timeout')});
+    await page.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000}).catch((err)=> { throw new Error('waitForNavigation fick timeout')});
     console.log('Förbi waitForNavigation! ');
     await page.screenshot({ path: '3dsecure.png' }).then(() => console.log('Screenshot: 3dsecure.png'));
 
@@ -200,20 +218,32 @@ function pickRandomDay(sel){
     console.log('selectWait klar loop');
     const pageFrames = page.frames();
     let aFrame = null;
+    let check = false;
     for (let index = 0; index < pageFrames.length; index++) {
-      console.log('loop url: ' + pageFrames[index].url() + ' ' + index);
-      await pageFrames[index].title().then((title) => {
-        console.log('loop title: ' + title + ' , index: ' + index);
-        if (title === 'ACS Test Page') {
-          console.log('title === ACS Test Page.Sätter frame');
-          aFrame = pageFrames[index];
-          aFrame.waitForSelector('#userInput1_password').then(()=>{console.log('hittade input i loopen!')} ).catch((err)=> {console.error('Kunde inte hitta userInput1_password')})
-        }else{
-          console.log('title === ACS Test Page.Sätter frame');
-        }
+      console.log('loopar frames. ' + index);
+      let title = await pageFrames[index].title();
+      if (title === 'ACS Test Page') {
+        check = true;
+        await pageFrames[index].waitForSelector('#userInput1_password').catch((err)=>{throw new Error("Kunde inte hitta pw i frame. " + err )});
+        await pageFrames[index].type('#userInput1_password','123').then(
+          await page.screenshot({ path: 'frame.png' })
+        ).catch((err)=>{throw new Error("Kunde inte skriva CSV 123 i frame. " + err )});
+        await pageFrames[index].click('#masterForm > input[type="button"]').catch((err)=>{throw new Error("Kunde klicka Do Authenticate i frame. " + err )}); // #masterForm > input[type="button"]:nth-child(4)
+        console.log('Frame hanterad och klar');
+        await page.waitFor(1000);
+      }
+    };
 
-      }).catch((err)=>{console.error('Fel titel ',err)});
-
+    await page.waitForSelector('#backToMerchant').then(page.click('#backToMerchant'));
+    await page.waitForSelector('.recloc')
+    await page.screenshot('./bokningsref.png')
+    await page.evaluate(setBookingRef,'span.recloc')
+.then((texten) => {
+    bokref = texten
+    console.log('Enkel, Malmö-Bromma. 1 ADT,1 CHD,svenska namn')
+    console.log('Bokning skapad. Bokningsnr: '+ bokref + ' Efternamn: ' + adtlast );
+    console.log('Avbokning kan påbörjas..')
+});
       // if (aFrame) {
       //   console.log('aFrame väntar på #userInput1_password...' );
       //   await aFrame.waitForSelector('#userInput1_password').then(console.log('hittade input!') ).catch((err)=> {console.error('Kunde inte hitta pw')})
@@ -223,10 +253,10 @@ function pickRandomDay(sel){
       // console.log('Num Frame kids' + element.childFrames().length);
       // console.log("CONTENT");
       // element.content().then((val) => fs.writeFileSync('./content' + index + '.html',val )).catch((err) => {throw new Error('kunde inte spara filen content' + index + '.html')})
-      console.log('content' + index + '.html är OK' );
+
 
       // console.log("Url o content frame slut");
-    };
+
     pageFrames[1].waitForSelector('#userInput1_password').then(()=>{console.log('hittade input i hårda!')} ).catch((err)=> {console.error('Kunde inte hitta hårda userInput1_password')});
     // const runnerFrame = pageFrames.find(frame => frame.url().includes('DisplayViewVBV'));
 
@@ -237,7 +267,7 @@ function pickRandomDay(sel){
 
 
   } catch (error) {
-    await page.screenshot('ERROR.png');
+    // await page.screenshot('ERROR.png');
     console.error('Fel ', error);
   }
 
