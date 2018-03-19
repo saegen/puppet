@@ -95,8 +95,10 @@ function setBookingRef(sel){
       // console.log('Klickar avreseort..')
      res.click();
      console.log('Avreseort klickad');
+
       //await page.click('#travelFrom')
       }).catch((err) => {throw new Error('Kunde inte hitta avresedatum!')});
+
     await page.click('#DatePickerDeparture a.ui-datepicker-next').then(await page.click('#DatePickerDeparture a.ui-datepicker-next'));// .catch((err) => {throw new Error('Kunde inte klicka nästa månad! ' + err.msg)}));
     //tar en dag mitt i månaden för att försöka undvika att det kommer saknas resor den dagen.
     console.log('Klickat avresedatum månad 2 grr. Väljer ett random datum ');
@@ -228,13 +230,24 @@ function setBookingRef(sel){
         await pageFrames[index].type('#userInput1_password','123').then(
           await page.screenshot({ path: 'frame.png' })
         ).catch((err)=>{throw new Error("Kunde inte skriva CSV 123 i frame. " + err )});
-        await pageFrames[index].click('#masterForm > input[type="button"]').catch((err)=>{throw new Error("Kunde klicka Do Authenticate i frame. " + err )}); // #masterForm > input[type="button"]:nth-child(4)
-        console.log('Frame hanterad och klar');
-        await page.waitFor(1000);
+          await pageFrames[index].click('#masterForm > input[type="button"]').catch((err)=>{throw new Error("Kunde klicka Do Authenticate i frame. " + err )}); // #masterForm > input[type="button"]:nth-child(4)
+          console.log('1 Frame hanterad. Väntar på #backToMerchant');
+         await pageFrames[index].waitForSelector('#backToMerchant');
+         // .then((elHandle)=>{ elHandle.click()}); //.catch((err)=>{throw new Error("Kunde klicka Back To Merchant i frame. " + err )});
+         let btn = await pageFrames[index].$('#backToMerchant');
+         console.log('Hittade #backToMerchant i variabel.. btn: ', btn);
+         await btn.focus().then(console.log('Efter fokus: ', btn));
+         await pageFrames[index].waitFor(8000)
+         await btn.click();
+         console.log('Efter clic ');
+         console.log('Allt ok #backToMerchant,hittad o klickad');
+        //  await pageFrames[index].click('#backToMerchant'); // .then((val)=>{console.log('klickat backToMerchant.')}).catch((err)=>{throw new Error("Kunde klicka Back To Merchant i frame. " + err )});
+         await pageFrames[index].waitFor(3000)
       }
     };
 
-    await page.waitForSelector('#backToMerchant').then(page.click('#backToMerchant'));
+    // await page.waitForSelector('#backToMerchant').then(page.click('#backToMerchant'));
+    console.log('Väntar på span.recloc');
     await page.waitForSelector('.recloc')
     await page.screenshot('./bokningsref.png')
     await page.evaluate(setBookingRef,'span.recloc')
@@ -257,7 +270,7 @@ function setBookingRef(sel){
 
       // console.log("Url o content frame slut");
 
-    pageFrames[1].waitForSelector('#userInput1_password').then(()=>{console.log('hittade input i hårda!')} ).catch((err)=> {console.error('Kunde inte hitta hårda userInput1_password')});
+    // pageFrames[1].waitForSelector('#userInput1_password').then(()=>{console.log('hittade input i hårda!')} ).catch((err)=> {console.error('Kunde inte hitta hårda userInput1_password')});
     // const runnerFrame = pageFrames.find(frame => frame.url().includes('DisplayViewVBV'));
 
     // console.log(runnerFrame.url()); // runnerFrame is in page.frames()
