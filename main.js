@@ -4,9 +4,7 @@ const puppeteer = require('puppeteer');
 var today = new Date();
 today.setFullYear(today.getFullYear() - 5);
 var dd = today.getDate().toString();
-// dds: string = today.getDate().toString();
-// mms: string = today.getMonth().toString();
-var mm = (today.getMonth() + 1).toString(); //January is 0!
+var mm = (today.getMonth() + 1).toString();
 var yyyy = today.getFullYear().toString();
 
 var adtfirst = 'Örjanten';
@@ -78,30 +76,27 @@ function setBookingRef(sel){
   });
   try {
     //Ingen hemresa
-    await page.waitFor(2000);
-    console.log('Väntat på första sidan. Väntar Enkelresa... ');
-    await page.waitForSelector('#RoundTrip').then((handle)=>{
-      handle.click();
-      console.log('Enkelresa vald');
-    }).catch((err) => {throw new Error('Kunde inte välja enkelresa')});
+    console.log('Väntar och väljer Enkelresa... ');
+    await page.waitForSelector('#RoundTrip')
+      .then((handle)=>{
+        handle.click();
+        console.log('Enkelresa vald');
+      }
+    ).catch((err) => {throw new Error('Kunde inte välja enkelresa')});
 
-    // await page.waitForSelector('#destination > div > div.formArea > div > div:nth-child(3) > label > div > ins');
-    // console.log('Väntat på roundtripiin ..');
-    // await page.click('#destination > div > div.formArea > div > div:nth-child(3) > label > div > ins');
+
     console.log('Klickat på destination. Väntar på avresedatum.. ');
-    // Fixa utresedatum 2 månader senare
+    // Fixa utresedatum 2 månader senare för att öka sannolikhteten att det finns lediga resor
     await page.waitForSelector('#travelFrom').then(
-     (res) => {
-      // console.log('Klickar avreseort..')
-     res.click();
-     console.log('Avreseort klickad');
+      (res) => {
+        res.click();
+        console.log('Avreseort klickad');
+      }
+    ).catch((err) => {throw new Error('Kunde inte hitta avresedatum!')});
 
-      //await page.click('#travelFrom')
-      }).catch((err) => {throw new Error('Kunde inte hitta avresedatum!')});
-
-    await page.click('#DatePickerDeparture a.ui-datepicker-next').then(await page.click('#DatePickerDeparture a.ui-datepicker-next'));// .catch((err) => {throw new Error('Kunde inte klicka nästa månad! ' + err.msg)}));
+    await page.click('#DatePickerDeparture a.ui-datepicker-next').then(await page.click('#DatePickerDeparture a.ui-datepicker-next'));
+    console.log('Klickat avresedatum månad 2 grr och väljer ett random datum ');
     //tar en dag mitt i månaden för att försöka undvika att det kommer saknas resor den dagen.
-    console.log('Klickat avresedatum månad 2 grr. Väljer ett random datum ');
     await page.evaluate(pickRandomDay,'#DatePickerDeparture  a.ui-state-default');
     // Anger Från och Till
     await page.click('#allOriginRoutes').catch((err) => {throw new Error('Kunde inte klicka avreseort!')});
@@ -113,7 +108,7 @@ function setBookingRef(sel){
     await page.click('#Children-Add');
     await page.screenshot({ path: 'f7_sida1.png' }).then(() => console.log('screenshot sida1'));
 
-    // Gå till sida 2
+    // Gå till sida 2, Välj resa
     await page.click('#destination > div > div.formArea > div > div.col-sm-6.col-xs-12.colFive.pull-right > button');
     await page.waitFor(2000);
     console.log('Går till sida 2...')
@@ -122,10 +117,6 @@ function setBookingRef(sel){
     // console.log('Sida 2 är laddad');
     await page.screenshot({ path: 'f7_sida2.png' }).then(() => console.log('screenshot sida2'));
     // Väljer en resa
-    //Alternativ till att kasta fel. leta efter  #global-error-message //#dp1520350372387 > div > table > tbody > tr:nth-child(2) > td:nth-child(5) > a
-      // leta efter och klicka "Ändra sökning" : modifySearch > a:nth-child(1), älle div.modifySearch > a
-      // byt månad
-      // klick fortsätt igen och börja om
     await page.waitForSelector('div.bound-table-cell-reco-available').catch((err) => {
       throw new Error("Kunde hitta tillgängliga resor detta datum, försök ett annat datum.")
       }
@@ -194,38 +185,22 @@ function setBookingRef(sel){
     await page.click('#widget-group-purchaseForm-termsConditionsForm-termsAndCondition > div > label')
     await page.screenshot({ path: 'betalning.png' }).then(() => console.log('Betalning klar. Går till 3Dsecure..'));
 
-  //   page.on('frameattached',(a)=>{
-  //     console.log('frameattached frames count: ' + page.frames.length);
-  //     // console.log('iframe Attached eventhandler!');
-  //     // console.log('Frame (ACS Test Page) title: ' + a.title());
-  //     a.title().then((title) => {console.log('Frame (ACS Test Page) title: ' + title);})
-  //     console.log('Name: ',a.name());
-  //     console.log('Url: ',a.url());
-  //     a.waitForSelector('#userInput1_password').then(()=>{console.log(H)}).catch((err) => {console.error('Kunde inte hitta userInput1_password')});
 
-  // })
     await page.click('button.tripSummary-btn-continue')
     await page.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000}).catch((err)=> { throw new Error('waitForNavigation fick timeout')});
     console.log('Förbi waitForNavigation! ');
     await page.screenshot({ path: '3dsecure.png' }).then(() => console.log('Screenshot: 3dsecure.png'));
-
-  // page.on('framedetached',(a)=>{
-  //   console.log('iframe Detached!! ',a.name());
-  // })
-  //await page.waitFor(80000);
+    await page.waitFor(80000);
     const frames = page.frames();
-    // console.log('Före selectwait. frames count1: ' + frames.length);
 
     await page.waitForSelector('iframe[src*=DisplayViewVBV]').catch((err)=>{throw new Error('Kunde inte hitta frame med [src*=DisplayViewVBV :( ')});
     console.log('selectWait klar loop');
     const pageFrames = page.frames();
     let aFrame = null;
-    let check = false;
     for (let index = 0; index < pageFrames.length; index++) {
       console.log('loopar frames. ' + index);
       let title = await pageFrames[index].title();
       if (title === 'ACS Test Page') {
-        check = true;
         await pageFrames[index].waitForSelector('#userInput1_password').catch((err)=>{throw new Error("Kunde inte hitta pw i frame. " + err )});
         await pageFrames[index].type('#userInput1_password','123').then(
           await page.screenshot({ path: 'frame.png' })
@@ -235,94 +210,30 @@ function setBookingRef(sel){
          await pageFrames[index].waitForSelector('#backToMerchant');
          // .then((elHandle)=>{ elHandle.click()}); //.catch((err)=>{throw new Error("Kunde klicka Back To Merchant i frame. " + err )});
          let btn = await pageFrames[index].$('#backToMerchant');
-         console.log('Hittade #backToMerchant i variabel.. btn: ', btn);
-         await btn.focus().then(console.log('Efter fokus: ', btn));
+         console.log('Hittade #backToMerchant i variabel.. btn: ');
+         await btn.focus().then(console.log('backToMerchant har fått focus vilket är workaround pga node not visible'));
          await pageFrames[index].waitFor(8000)
          await btn.click();
-         console.log('Efter clic ');
          console.log('Allt ok #backToMerchant,hittad o klickad');
-        //  await pageFrames[index].click('#backToMerchant'); // .then((val)=>{console.log('klickat backToMerchant.')}).catch((err)=>{throw new Error("Kunde klicka Back To Merchant i frame. " + err )});
-         await pageFrames[index].waitFor(3000)
+
       }
     };
 
-    // await page.waitForSelector('#backToMerchant').then(page.click('#backToMerchant'));
-    console.log('Väntar på span.recloc');
-    await page.waitForSelector('.recloc')
-    await page.screenshot('./bokningsref.png')
+    console.log('Väntar på span.recloc...');
+    await page.waitForSelector('.recloc');
+    await page.screenshot({ path: 'bokningsref.png' });
     await page.evaluate(setBookingRef,'span.recloc')
-.then((texten) => {
-    bokref = texten
-    console.log('Enkel, Malmö-Bromma. 1 ADT,1 CHD,svenska namn')
-    console.log('Bokning skapad. Bokningsnr: '+ bokref + ' Efternamn: ' + adtlast );
-    console.log('Avbokning kan påbörjas..')
-});
-      // if (aFrame) {
-      //   console.log('aFrame väntar på #userInput1_password...' );
-      //   await aFrame.waitForSelector('#userInput1_password').then(console.log('hittade input!') ).catch((err)=> {console.error('Kunde inte hitta pw')})
-      // }else{ console.error('Frame tilldelning funkar ej!!')}
+      .then((texten) => {
+        bokref = texten
+        console.log('Enkel, Malmö-Bromma. 1 ADT,1 CHD,svenska namn')
+        console.log('Bokning skapad. Bokningsnr: '+ bokref + ' Efternamn: ' + adtlast );
+        console.log('Avbokning kan påbörjas..')
+      });
 
-
-      // console.log('Num Frame kids' + element.childFrames().length);
-      // console.log("CONTENT");
-      // element.content().then((val) => fs.writeFileSync('./content' + index + '.html',val )).catch((err) => {throw new Error('kunde inte spara filen content' + index + '.html')})
-
-
-      // console.log("Url o content frame slut");
-
-    // pageFrames[1].waitForSelector('#userInput1_password').then(()=>{console.log('hittade input i hårda!')} ).catch((err)=> {console.error('Kunde inte hitta hårda userInput1_password')});
-    // const runnerFrame = pageFrames.find(frame => frame.url().includes('DisplayViewVBV'));
-
-    // console.log(runnerFrame.url()); // runnerFrame is in page.frames()
     await page.waitFor(8000);
 
-    // await dumpFrameTree(page, page.mainFrame(), '');
-
-
   } catch (error) {
-    // await page.screenshot('ERROR.png');
     console.error('Fel ', error);
   }
-
-  //   await page.waitForNavigation();
   await browser.close();
 })();
-
-// async function dumpFrameTree(frame, indent) {
-//   console.log(indent + frame.url());
-//   // let content = await frame.content();
-//   console.log(content);
-//   const result = await frame.evaluate(() => {
-//       let retVal = '';
-//       if (document.doctype) {
-//           retVal = new XMLSerializer().serializeToString(document.doctype);
-//       }
-//       if (document.documentElement) {
-//           retVal += document.documentElement.outerHTML;
-//       }
-//       return retVal;
-//   });
-//   console.log(indent + "  " + result.slice(0, 20));
-//   for (let child of frame.childFrames()) {
-//       await dumpFrameTree(child, indent + '  ');
-//   }
-// }
-
-
-// async function dumpFrameTree(page, frame, indent) {
-//   console.log(indent + frame.url());
-//   const result = await frame.evaluate(() => {
-//       let retVal = '';
-//       if (document.doctype) {
-//           retVal = new XMLSerializer().serializeToString(document.doctype);
-//       }
-//       if (document.documentElement) {
-//           retVal += document.documentElement.outerHTML;
-//       }
-//       return retVal;
-//   });
-//   console.log(indent + "  " + result.slice(0, 20));
-//   for (let child of frame.childFrames()) {
-//       await dumpFrameTree(page, child, indent + '  ');
-//   }
-// }
