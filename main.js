@@ -7,11 +7,11 @@ var dd = today.getDate().toString();
 var mm = (today.getMonth() + 1).toString();
 var yyyy = today.getFullYear().toString();
 
-var adtfirst = 'Örjanten';
-var adtlast = 'aFramesten';
-var chdfirst = 'Ärla';
-var chdlast = 'Åsbrink';
-var mail = 'saegen@hotmail.com';
+var adtfirst = 'Ärnst';
+var adtlast = 'Arvidssön';
+var chdfirst = 'Pårla';
+var chdlast = 'Äsbrink';
+var mail = 'tomas.hesse@consid.se';
 // var mail = 'tomas.hesse@consid.se';
 //kort 4541090000010073
 var nameOnCard = adtfirst + ' ' + adtlast;
@@ -190,8 +190,7 @@ function setBookingRef(sel){
     await page.waitForNavigation({waitUntil: 'networkidle0', timeout: 60000}).catch((err)=> { throw new Error('waitForNavigation fick timeout')});
     console.log('Förbi waitForNavigation! ');
     await page.screenshot({ path: '3dsecure.png' }).then(() => console.log('Screenshot: 3dsecure.png'));
-    await page.waitFor(80000);
-    const frames = page.frames();
+    await page.waitFor(8000);
 
     await page.waitForSelector('iframe[src*=DisplayViewVBV]').catch((err)=>{throw new Error('Kunde inte hitta frame med [src*=DisplayViewVBV :( ')});
     console.log('selectWait klar loop');
