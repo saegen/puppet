@@ -21,8 +21,8 @@ const puppeteer = require('puppeteer');
   });
 
 
-  var last = 'Arvidssön'
-  var bookref = 'O7DUYN'
+  var adtlast = 'Arvidssön';
+  var bookref = 'O7GBKH';
 
   await page.goto('http://www.uat.flygbra.se', { waitUntil: ['networkidle0'] }).then((response) => {
     console.log('Avbokning påbörjas..');
@@ -35,29 +35,31 @@ const puppeteer = require('puppeteer');
     await page.waitForSelector('a[href="/medlem/visa-andra-bokningar/"]').then((ele) => {ele.click()}); // click('a[href="/visa-andra-bokningar/"]')
     await page.waitForSelector('#SearchBooking_Surname');
     console.log('Type efternamn...');
-    await page.type('#SearchBooking_Surname', last, { delay: 20 });
+    await page.type('#SearchBooking_Surname', adtlast, { delay: 20 });
     await page.waitForSelector('#SearchBooking_BookingReference');
     console.log('Type bokref...');
     await page.type('#SearchBooking_BookingReference', bookref, { delay: 20 });
-    console.log('Klicka sök knapp...');
-    await page.click('#searchBookingFormBtn');
+    console.log('HÄMTA BOKNINGAR...');
+    await page.waitForSelector('#searchBookingFormBtn').then((btn)=>{
+      console.log('Klickar HÄMTA BOKNINGAR');
+      btn.click();
+    }).catch((err)=> {throw new Error('Kund inte klicka HÄMTA BOKNINGAR')});
     await page.waitFor(3000);
-    await page.waitForSelector('span[data-action="REFUND"]');
+    console.log('AVBOKA RESA...');
+    await page.waitForSelector('span[data-action="REFUND"]').then((btn)=>{
+      console.log('Klickar AVBOKA RESA');
+      btn.click();}).catch((err)=> {throw new Error('Kund inte klicka AVBOKA RESA')});
     await page.waitFor(3000);
-    console.log('Klicka annan knapp knapp...');
-    await page.screenshot({ path: 'avbokar.png' });
-    await page.click('span[data-action="REFUND"]'); //AVBOKA RESA knapp
-    await page.waitFor(3000);
-    await page.waitForNavigation( { waitUntil: ['networkidle0'] }).then((res)=>{console.log('Navigering genomförd')}).catch(console.error('navigeringen gick inte'))
-    console.log('Klickar BEKRÄFTA AVBOKNING!');
+    await page.screenshot({ path: 'avbokar.png' }).then(() => console.log('screenshot avbokar.png'));;
+        await page.waitForNavigation( { waitUntil: ['networkidle0'] }).then((res)=>{console.log('Navigering genomförd')}).catch(console.error('navigeringen gick inte'))
 
     const but = await page.waitForSelector('button.confirm-refund');
     if(but){
-      console.log('U but!!!!!');
-      // console.log(but);
+      console.log('Klickar BEKRÄFTA AVBOKNING!');
       but.click();
-
-    }else{console.error('No but!!!!!')}
+    }else{
+      throw new Error('Kunde inte klicka BEKRÄFTA AVBOKNIN');
+    }
     await page.waitFor(5000);
 
   } catch (error) {

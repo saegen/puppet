@@ -138,10 +138,9 @@ function setBookingRef(sel){
     console.log('evaluate är körd.');
     await page.screenshot({ path: 'f7_sida3.png' }).then(() => console.log('Screenshot: f7_sida3'));
     await page.click('button.tripSummary-btn-continue');
-    console.log('knapptryckt');
 
     await page.waitFor(2000);
-    console.log('Väntar på resenär...');
+    console.log('Väntar på sida 3, Resenär...');
     await page.waitForSelector('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode');
     console.log('Hittade resenär: Man MR!');
     await page.select('#tpl3_widget-input-travellerList-traveller_0_ADT-IDEN_TitleCode', 'MR');
@@ -168,7 +167,7 @@ function setBookingRef(sel){
     console.log('Mail 2');
     await page.type('#tpl3_widget-input-travellerList-contactInformation-PhoneMobile', mobilen).then(() => console.debug('Mobilen. Resenär ifylld!'));
 
-    await page.screenshot({ path: 'resenarsinfo.png' }).then(() => console.log('Resenärsinfo klar. Går till sida 4..'));
+    await page.screenshot({ path: 'resenarsinfo.png' }).then(() => console.log('Resenärsinfo klar. Går till sida 4, Tillval..'));
     await page.click('button.tripSummary-btn-continue');
     await page.waitFor(10000)
     await page.waitForSelector('button.tripSummary-btn-continue');
@@ -198,9 +197,9 @@ function setBookingRef(sel){
     await page.waitFor(8000);
 
     // await page.waitForSelector('iframe[src*=DisplayViewVBV]').catch((err)=>{throw new Error('Kunde inte hitta frame med [src*=DisplayViewVBV :( ')});
-    console.log('selectWait klar loop');
+
     const pageFrames = page.frames();
-    let aFrame = null;
+
     for (let index = 0; index < pageFrames.length; index++) {
       console.log('loopar frames. ' + index);
       let title = await pageFrames[index].title();
@@ -230,11 +229,45 @@ function setBookingRef(sel){
       .then((texten) => {
         bokref = texten
         console.log('Enkel, Malmö-Bromma. 1 ADT,1 CHD,svenska namn')
-        console.log('Bokning skapad. Bokningsnr: '+ bokref + ' Efternamn: ' + adtlast );
+        console.log('Bokning skapad! Bokningsnr: '+ bokref + ' Efternamn: ' + adtlast );
         console.log('Avbokning kan påbörjas..')
       });
 
-    await page.waitFor(8000);
+      await page.goto('http://www.uat.flygbra.se', { waitUntil: ['networkidle0'] }).then((response) => {
+        console.log('Avbokning påbörjas..');
+        }).catch((reason) => {
+        console.error('Kunde inte navigera till http://www.uat.flygbra.se. ', reason)
+      });
+
+        console.log('Avisa-andra-bokningar..');
+        await page.waitForSelector('a[href="/medlem/visa-andra-bokningar/"]').then((ele) => {ele.click()}); // click('a[href="/visa-andra-bokningar/"]')
+        await page.waitForSelector('#SearchBooking_Surname');
+        console.log('Type efternamn...');
+        await page.type('#SearchBooking_Surname', adtlast, { delay: 20 });
+        await page.waitForSelector('#SearchBooking_BookingReference');
+        console.log('Type bokref...');
+        await page.type('#SearchBooking_BookingReference', bookref, { delay: 20 });
+        console.log('Klicka sök knapp...');
+        await page.click('#searchBookingFormBtn');
+        await page.waitFor(3000);
+        await page.waitForSelector('span[data-action="REFUND"]');
+        await page.waitFor(3000);
+        console.log('Klicka annan knapp knapp...');
+        await page.screenshot({ path: 'avbokar.png' });
+        await page.click('span[data-action="REFUND"]'); //AVBOKA RESA knapp
+        await page.waitFor(3000);
+        await page.waitForNavigation( { waitUntil: ['networkidle0'] }).then((res)=>{console.log('Navigering genomförd')}).catch(console.error('navigeringen gick inte'))
+        console.log('Klickar BEKRÄFTA AVBOKNING!');
+
+        const but = await page.waitForSelector('button.confirm-refund');
+        if(but){
+          console.log('U but!!!!!');
+          // console.log(but);
+          but.click();
+
+        }else{console.error('No but!!!!!')}
+        await page.waitFor(5000);
+
 
   } catch (error) {
     console.error('Fel ', error);
