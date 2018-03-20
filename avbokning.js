@@ -22,7 +22,7 @@ const puppeteer = require('puppeteer');
 
 
   var last = 'Arvidssön'
-  var bookref = 'O32NZT'
+  var bookref = 'O7DUYN'
 
   await page.goto('http://www.uat.flygbra.se', { waitUntil: ['networkidle0'] }).then((response) => {
     console.log('Avbokning påbörjas..');
@@ -54,11 +54,11 @@ const puppeteer = require('puppeteer');
     const but = await page.waitForSelector('button.confirm-refund');
     if(but){
       console.log('U but!!!!!');
-      console.log(but);
+      // console.log(but);
       but.click();
 
     }else{console.error('No but!!!!!')}
-    await page.waitFor(3000);
+    await page.waitFor(5000);
 
   } catch (error) {
     console.error('Fel ', error);
