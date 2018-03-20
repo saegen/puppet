@@ -117,7 +117,7 @@ function setBookingRef(sel){
     await page.click('#destination > div > div.formArea > div > div.col-sm-6.col-xs-12.colFive.pull-right > button');
     await page.waitFor(2000);
     console.log('Går till sida 2...')
-    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 12000 }).then((res) => {console.log('Sida 2 är laddad')}).catch((err) => { throw new Error("Kunde navigera till sida 2." + err.message) });
+    await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 22000 }).then((res) => {console.log('Sida 2 är laddad')}).catch((err) => { throw new Error("Kunde navigera till sida 2." + err.message) });
     // await nav;
     // console.log('Sida 2 är laddad');
     await page.screenshot({ path: 'f7_sida2.png' }).then(() => console.log('screenshot sida2'));
@@ -233,41 +233,43 @@ function setBookingRef(sel){
         console.log('Avbokning kan påbörjas..')
       });
 
-      await page.goto('http://www.uat.flygbra.se', { waitUntil: ['networkidle0'] }).then((response) => {
-        console.log('Avbokning påbörjas..');
-        }).catch((reason) => {
-        console.error('Kunde inte navigera till http://www.uat.flygbra.se. ', reason)
-      });
+    await page.goto('http://www.uat.flygbra.se', { waitUntil: ['networkidle0'] }).then((response) => {
+      console.log('Avbokning påbörjas..');
+    }).catch((reason) => {
+    console.error('Kunde inte navigera till http://www.uat.flygbra.se. ', reason)
+    });
 
-        console.log('Avisa-andra-bokningar..');
-        await page.waitForSelector('a[href="/medlem/visa-andra-bokningar/"]').then((ele) => {ele.click()}); // click('a[href="/visa-andra-bokningar/"]')
-        await page.waitForSelector('#SearchBooking_Surname');
-        console.log('Type efternamn...');
-        await page.type('#SearchBooking_Surname', adtlast, { delay: 20 });
-        await page.waitForSelector('#SearchBooking_BookingReference');
-        console.log('Type bokref...');
-        await page.type('#SearchBooking_BookingReference', bookref, { delay: 20 });
-        console.log('Klicka sök knapp...');
-        await page.click('#searchBookingFormBtn');
-        await page.waitFor(3000);
-        await page.waitForSelector('span[data-action="REFUND"]');
-        await page.waitFor(3000);
-        console.log('Klicka annan knapp knapp...');
-        await page.screenshot({ path: 'avbokar.png' });
-        await page.click('span[data-action="REFUND"]'); //AVBOKA RESA knapp
-        await page.waitFor(3000);
+    console.log('Avisa-andra-bokningar..');
+    await page.waitForSelector('a[href="/medlem/visa-andra-bokningar/"]').then((ele) => {ele.click()}); // click('a[href="/visa-andra-bokningar/"]')
+    await page.waitForSelector('#SearchBooking_Surname');
+    console.log('Type efternamn...');
+    await page.type('#SearchBooking_Surname', adtlast, { delay: 20 });
+    await page.waitForSelector('#SearchBooking_BookingReference');
+    console.log('Type bokref...');
+    await page.type('#SearchBooking_BookingReference', bokref, { delay: 20 });
+    console.log('HÄMTA BOKNINGAR...');
+    await page.waitForSelector('#searchBookingFormBtn').then((btn)=>{
+      console.log('Klickar HÄMTA BOKNINGAR');
+      btn.click();
+    }).catch((err)=> {throw new Error('Kund inte klicka HÄMTA BOKNINGAR')});
+    await page.waitFor(3000);
+    console.log('AVBOKA RESA...');
+    await page.waitForSelector('span[data-action="REFUND"]').then((btn)=>{
+      console.log('Klickar AVBOKA RESA');
+      btn.click();}).catch((err)=> {throw new Error('Kund inte klicka AVBOKA RESA')});
+    await page.waitFor(3000);
+    await page.screenshot({ path: 'avbokar.png' }).then(() => console.log('screenshot avbokar.png'));;
         await page.waitForNavigation( { waitUntil: ['networkidle0'] }).then((res)=>{console.log('Navigering genomförd')}).catch(console.error('navigeringen gick inte'))
-        console.log('Klickar BEKRÄFTA AVBOKNING!');
 
-        const but = await page.waitForSelector('button.confirm-refund');
-        if(but){
-          console.log('U but!!!!!');
-          // console.log(but);
-          but.click();
-
-        }else{console.error('No but!!!!!')}
-        await page.waitFor(5000);
-
+    const but = await page.waitForSelector('button.confirm-refund');
+    if(but){
+      console.log('Klickar BEKRÄFTA AVBOKNING!');
+      but.click();
+    }else{
+      throw new Error('Kunde inte klicka BEKRÄFTA AVBOKNIN');
+    }
+    await page.waitFor(5000);
+    console.log('Testfall klart och OK!');
 
   } catch (error) {
     console.error('Fel ', error);
