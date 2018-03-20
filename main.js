@@ -94,6 +94,11 @@ function setBookingRef(sel){
       }
     ).catch((err) => {throw new Error('Kunde inte hitta avresedatum!')});
 
+    await page.waitForSelector('#DatePickerDeparture a.ui-datepicker-next');
+    // .then((nextMonth)=>{
+    //   nextMonth.click().then(page.click('#DatePickerDeparture a.ui-datepicker-next'));
+    // }).catch((err) => {throw new Error('Kunde inte byta månad för avresedatum!')});
+
     await page.click('#DatePickerDeparture a.ui-datepicker-next').then(await page.click('#DatePickerDeparture a.ui-datepicker-next'));
     console.log('Klickat avresedatum månad 2 grr och väljer ett random datum ');
     //tar en dag mitt i månaden för att försöka undvika att det kommer saknas resor den dagen.
@@ -192,7 +197,7 @@ function setBookingRef(sel){
     await page.screenshot({ path: '3dsecure.png' }).then(() => console.log('Screenshot: 3dsecure.png'));
     await page.waitFor(8000);
 
-    await page.waitForSelector('iframe[src*=DisplayViewVBV]').catch((err)=>{throw new Error('Kunde inte hitta frame med [src*=DisplayViewVBV :( ')});
+    // await page.waitForSelector('iframe[src*=DisplayViewVBV]').catch((err)=>{throw new Error('Kunde inte hitta frame med [src*=DisplayViewVBV :( ')});
     console.log('selectWait klar loop');
     const pageFrames = page.frames();
     let aFrame = null;
