@@ -22,7 +22,7 @@ const puppeteer = require('puppeteer');
 
 
   var adtlast = 'Arvidssön';
-  var bookref = 'O7GBKH';
+  var bokref = 'O7GBKH';
 
   await page.goto('http://www.uat.flygbra.se', { waitUntil: ['networkidle0'] }).then((response) => {
     console.log('Avbokning påbörjas..');
@@ -38,7 +38,7 @@ const puppeteer = require('puppeteer');
     await page.type('#SearchBooking_Surname', adtlast, { delay: 20 });
     await page.waitForSelector('#SearchBooking_BookingReference');
     console.log('Type bokref...');
-    await page.type('#SearchBooking_BookingReference', bookref, { delay: 20 });
+    await page.type('#SearchBooking_BookingReference', bokref, { delay: 20 });
     console.log('HÄMTA BOKNINGAR...');
     await page.waitForSelector('#searchBookingFormBtn').then((btn)=>{
       console.log('Klickar HÄMTA BOKNINGAR');
